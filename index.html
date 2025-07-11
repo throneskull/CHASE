@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chase The Button - Mobile Edition</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(145deg, #000000, #000000, #000000);
+      color: white;
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 {
+        margin: 40px 0 20px;
+        font-size: 1.6rem;
+        color: #ff0000;
+        font-family: 'MyGameFont', Arial, sans-serif;
+        letter-spacing: 3px;
+        font-weight: lighter;
+        padding: 15px 20px;
+        border: 3px solid #ff0000; /* ✅ clear visible border */
+        border-radius: 15px;
+        background-color: rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
+        animation: glow 2s infinite alternate;
+    }
+
+
+    #scoreboard {
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: 12px;
+      margin-top: 12px;
+      font-size: 1rem;
+    }
+
+    #timer {
+      font-weight: bold;
+      color: rgb(255, 0, 0);
+    }
+
+    #chase-btn {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: #ff003c;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      box-shadow: 0 0 15px #ff003c;
+      transition: transform 0.2s ease;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    #chase-btn.clicked {
+      transform: scale(1.2);
+      background-color: #000;
+    }
+
+    #game-over {
+      display: none;
+      position: fixed;
+      top: 60%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background-color: rgba(0, 0, 0, 0.85);
+      padding: 30px;    
+      border-radius: 15px;
+      font-family: 'MyGameFont', Arial, sans-serif;
+      box-shadow: 0 0 20px #ff0000;
+      letter-spacing: 3px;
+      z-index: 9999;
+    }
+
+    #game-over h2 {
+      margin-bottom: 15px;
+    }
+
+    #game-over button {
+      background-color: #0ecf3f;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+      letter-spacing: 3px;
+    }
+
+    #game-over button:hover {
+      background-color: #00aa77;
+    }
+
+    .title-section h1 {
+      border: 2px solid rgb(200, 0, 0);
+      border-radius: 20px;
+      padding: 15px 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: rgb(200, 0, 0);
+      font-family: 'MyGameFont', Arial, sans-serif;
+      font-size: 25px;
+      box-shadow: 0 0 15px rgb(200, 0, 0), 0 0 30px rgb(200, 0, 0);
+      animation: glow 2s infinite alternate;
+    }
+
+    @keyframes glow {
+    from {
+    box-shadow: 0 0 10px rgb(200, 0, 0);
+    }
+    to {
+    box-shadow: 0 0 25px rgb(255, 0, 0), 0 0 40px rgb(255, 0, 0);
+    }
+    }
+
+    @keyframes pulse {
+    0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px #ff003c;
+    }
+    50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px #ff003c;
+    }
+    100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px #ff003c;
+    }
+    }
+
+    @font-face {
+    font-family: 'MyGameFont';
+    src: url('font.otf') format('truetype');
+    }
+  </style>
+</head>
+<body>
+  <h1>Chase The Button</h1>
+  <div id="scoreboard">
+    Score: <span id="score">0</span> | Misses: <span id="misses">0</span> | <span id="timer">30</span>s
+  </div>
+
+  <button id="chase-btn"></button>
+
+  <div id="game-over">
+    <h2>Game Over!</h2>
+    <p>Final Score: <span id="final-score">0</span></p>
+    <p>Total Misses: <span id="final-misses">0</span></p>
+    <button onclick="resetGame()">Play Again ?</button>
+  </div>
+
+  <script>
+    const button = document.getElementById("chase-btn");
+    const scoreDisplay = document.getElementById("score");
+    const missesDisplay = document.getElementById("misses");
+    const timerDisplay = document.getElementById("timer");
+    const gameOverBox = document.getElementById("game-over");
+    const finalScore = document.getElementById("final-score");
+    const finalMisses = document.getElementById("final-misses");
+
+    let score = 0;
+    let misses = 0;
+    let clicked = false;
+    let timeLeft = 30;
+    let gameLoop, timerLoop;
+
+    function moveButton() {
+      const maxX = window.innerWidth - 80;
+      const maxY = window.innerHeight - 80;
+      const x = Math.random() * maxX;
+      const y = Math.random() * maxY;
+      button.style.left = x + "px";
+      button.style.top = y + "px";
+
+      if (!clicked) {
+        misses++;
+        missesDisplay.innerText = misses;
+        if (misses >= 5) {
+          gameOver();
+        }
+      }
+      clicked = false;
+    }
+
+    button.addEventListener("click", () => {
+      score++;
+      clicked = true;
+      scoreDisplay.innerText = score;
+      button.classList.add("clicked");
+      setTimeout(() => {
+        button.classList.remove("clicked");
+      }, 150);
+    });
+
+    function updateTimer() {
+      timeLeft--;
+      timerDisplay.innerText = timeLeft;
+      if (timeLeft <= 0) {
+        gameOver();
+      }
+    }
+
+    function gameOver() {
+      clearInterval(gameLoop);
+      clearInterval(timerLoop);
+      button.style.display = "none";
+      finalScore.innerText = score;
+      finalMisses.innerText = misses;
+      gameOverBox.style.display = "block";
+    }
+
+    function resetGame() {
+      score = 0;
+      misses = 0;
+      timeLeft = 30;
+      clicked = false;
+      scoreDisplay.innerText = score;
+      missesDisplay.innerText = misses;
+      timerDisplay.innerText = timeLeft;
+      button.style.display = "block";
+      gameOverBox.style.display = "none";
+      moveButton();
+      gameLoop = setInterval(moveButton, 1000);
+      timerLoop = setInterval(updateTimer, 1000);
+    }
+
+    // Start game
+    moveButton();
+    gameLoop = setInterval(moveButton, 1000);
+    timerLoop = setInterval(updateTimer, 1000);
+  </script>
+</body>
+</html>
